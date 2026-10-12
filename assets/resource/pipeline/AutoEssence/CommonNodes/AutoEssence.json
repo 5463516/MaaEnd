@@ -899,7 +899,7 @@
             "type": "And",
             "param": {
                 "all_of": [
-                    "CancelButton",
+                    "GrayCancelButton",
                     "__AutoEssenceRecoEngravePermitInsufficient"
                 ],
                 "box_index": 0
@@ -962,7 +962,7 @@
         "enabled": true,
         "recognition": "And",
         "all_of": [
-            "CancelButton",
+            "GrayCancelButton",
             {
                 "recognition": "OCR",
                 "roi": [
@@ -990,7 +990,7 @@
         "enabled": false,
         "recognition": "And",
         "all_of": [
-            "CancelButton",
+            "GrayCancelButton",
             {
                 "recognition": "OCR",
                 "roi": [
