@@ -715,8 +715,9 @@ std::optional<navmesh::BaseNavRouteResult> PlanNavmeshRouteImpl(
             recovered.start = entry->point;
             auto retry = PlanCorridorRoute(*navmesh, recovered, {}, out_diagnostic);
             if (retry.ok()) {
-                LogInfo << "NAVMESH replan start off mesh; walking onto the nearest mesh point first." << VAR(navmesh_zone) << VAR(locator_zone)
-                        << VAR(start.x) << VAR(start.y) << VAR(entry->point.x) << VAR(entry->point.y) << VAR(entry->distance);
+                LogInfo << "NAVMESH replan start off mesh; walking onto the nearest mesh point first." << VAR(navmesh_zone)
+                        << VAR(locator_zone) << VAR(start.x) << VAR(start.y) << VAR(entry->point.x) << VAR(entry->point.y)
+                        << VAR(entry->distance);
                 *out_start_recovery_entry = entry->point;
                 route_result = std::move(retry);
             }
