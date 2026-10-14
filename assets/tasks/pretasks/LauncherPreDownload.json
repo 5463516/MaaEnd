@@ -1,0 +1,63 @@
+{
+    "pretask": {
+        "controller": [
+            "Win32-Front"
+        ],
+        "exec": "agent/go-service",
+        "args": [
+            "--pretask",
+            "LauncherPreDownload"
+        ],
+        "name": "LauncherPreDownload",
+        "label": "$pretask.LauncherPreDownload.label",
+        "description": "$pretask.LauncherPreDownload.description",
+        "option": [
+            "LauncherPreDownloadEnable",
+            "LauncherPreDownloadGamePath",
+            "LauncherPreDownloadAutoAction"
+        ]
+    },
+    "option": {
+        "LauncherPreDownloadAutoAction": {
+            "type": "select",
+            "label": "$option.LauncherPreDownloadAutoAction.label",
+            "description": "$option.LauncherPreDownloadAutoAction.description",
+            "cases": [
+                {
+                    "name": "LogOnly",
+                    "label": "$option.LauncherPreDownloadAutoAction.cases.LogOnly.label"
+                },
+                {
+                    "name": "PreDownload",
+                    "label": "$option.LauncherPreDownloadAutoAction.cases.PreDownload.label"
+                }
+            ],
+            "default_case": "LogOnly"
+        },
+        "LauncherPreDownloadEnable": {
+            "type": "switch",
+            "label": "$option.LauncherPreDownloadEnable.label",
+            "description": "$option.LauncherPreDownloadEnable.description",
+            "cases": [
+                {
+                    "name": "Yes"
+                },
+                {
+                    "name": "No"
+                }
+            ],
+            "default_case": "Yes"
+        },
+        "LauncherPreDownloadGamePath": {
+            "type": "input",
+            "label": "$option.LauncherPreDownloadGamePath.label",
+            "inputs": [
+                {
+                    "name": "Path",
+                    "label": "$option.LauncherPreDownloadGamePath.inputs.Path.label",
+                    "description": "$option.LauncherPreDownloadGamePath.inputs.Path.description"
+                }
+            ]
+        }
+    }
+}
