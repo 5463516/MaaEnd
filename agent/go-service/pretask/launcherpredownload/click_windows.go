@@ -249,6 +249,12 @@ func locateDisc(win *launcherWindow, l layout, tolerance float64) (circle, int, 
 // 与预下载流程同构，区别只在目标是**主按钮**而不是圆钮：真机六张截图与前端
 // 状态机都证实，更新态下启动器根本不渲染那颗圆钮。
 func clickUpdateButton(cfg *gameConfig, targetVersion string) error {
+	// 必须最早声明 DPI 感知，且**不能**依赖 clickPreDownload —— pickAutoAction 在
+	// 接口说"需要更新"时会直接进这里，压根不经过预下载那条路。少了这一句，
+	// Windows 会把客户区尺寸与鼠标坐标都虚拟化（150% 缩放下报 1312x754 而不是
+	// 1968x1131），每一次点击都会偏。
+	enableDPIAwareness()
+
 	previous := foregroundWindow()
 	defer restoreForegroundWindow(previous)
 

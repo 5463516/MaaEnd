@@ -1546,7 +1546,7 @@
     "option.LauncherPreDownloadAutoAction.cases.PreDownload.label": "自动触发预下载与更新",
     "option.LauncherPreDownloadAutoAction.description": "检测到有预下载或游戏更新时是否自动操作。需要 MaaEnd 以管理员身份运行：鹰角启动器以管理员身份运行时，非管理员进程无法点击它的窗口。游戏更新会等待完成后再继续任务，可能耗时较久。",
     "option.LauncherPreDownloadAutoAction.label": "检测到预下载或更新时",
-    "option.LauncherPreDownloadEnable.description": "任务开始前联网向鹰角服务器查询是否有新的预下载或更新，请求只带区服与本地版本号，不会上传 UID、账号或设备标识。关闭后不再联网查询，但仍会通过识别启动器画面来判断并触发更新。",
+    "option.LauncherPreDownloadEnable.description": "任务开始前联网向鹰角服务器查询是否有新的预下载或更新，请求只带游戏标识、渠道与本地版本号，不会上传 UID、账号或设备标识。关闭后不再联网查询，但仍会通过识别启动器画面来触发预下载。",
     "option.LauncherPreDownloadEnable.label": "联网查询更新",
     "option.LauncherPreDownloadGamePath.inputs.Path.description": "填写游戏本体的安装目录，即包含 Endfield.exe 的文件夹。例如：D:\\Hypergryph\\Arknights Endfield",
     "option.LauncherPreDownloadGamePath.inputs.Path.label": "游戏安装目录",

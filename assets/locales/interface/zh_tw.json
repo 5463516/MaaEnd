@@ -1546,7 +1546,7 @@
     "option.LauncherPreDownloadAutoAction.cases.PreDownload.label": "自動觸發預下載與更新",
     "option.LauncherPreDownloadAutoAction.description": "檢測到有預下載或遊戲更新時是否自動操作。需要 MaaEnd 以管理員身分執行：鷹角啟動器以管理員身分執行時，非管理員行程無法點擊它的視窗。遊戲更新會等待完成後再繼續任務，可能耗時較久。",
     "option.LauncherPreDownloadAutoAction.label": "檢測到預下載或更新時",
-    "option.LauncherPreDownloadEnable.description": "任務開始前聯網向鷹角伺服器查詢是否有新的預下載或更新，請求只帶區服與本地版本號，不會上傳 UID、帳號或裝置標識。關閉後不再聯網查詢，但仍會透過識別啟動器畫面來判斷並觸發更新。",
+    "option.LauncherPreDownloadEnable.description": "任務開始前聯網向鷹角伺服器查詢是否有新的預下載或更新，請求只帶遊戲標識、渠道與本地版本號，不會上傳 UID、帳號或裝置標識。關閉後不再聯網查詢，但仍會透過識別啟動器畫面來觸發預下載。",
     "option.LauncherPreDownloadEnable.label": "聯網查詢更新",
     "option.LauncherPreDownloadGamePath.inputs.Path.description": "填寫遊戲本體的安裝目錄，即包含 Endfield.exe 的資料夾。例如：D:\\Hypergryph\\Arknights Endfield",
     "option.LauncherPreDownloadGamePath.inputs.Path.label": "遊戲安裝目錄",

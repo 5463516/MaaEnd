@@ -1546,7 +1546,7 @@
     "option.LauncherPreDownloadAutoAction.cases.PreDownload.label": "Trigger pre-downloads and updates",
     "option.LauncherPreDownloadAutoAction.description": "Whether to act automatically when a pre-download or game update is available. Requires MaaEnd to run as administrator: when the Hypergryph Launcher runs elevated, a non-elevated process cannot click its window. A game update is awaited until it finishes before tasks continue, which can take a while.",
     "option.LauncherPreDownloadAutoAction.label": "When a pre-download or update is detected",
-    "option.LauncherPreDownloadEnable.description": "Connects to Hypergryph's servers before tasks start to check for a new pre-download or update. The request carries only the region and the locally installed version - no UID, account or device identifier. When disabled, no request is made, but the launcher window is still inspected to detect and trigger updates.",
+    "option.LauncherPreDownloadEnable.description": "Connects to Hypergryph's servers before tasks start to check for a new pre-download or update. The request carries only the game app code, channel and the locally installed version - no UID, account or device identifier. When disabled, no request is made, but the launcher window is still inspected to trigger pre-downloads.",
     "option.LauncherPreDownloadEnable.label": "Check for updates online",
     "option.LauncherPreDownloadGamePath.inputs.Path.description": "The game's own install directory, i.e. the folder containing Endfield.exe. For example: D:\\Hypergryph\\Arknights Endfield",
     "option.LauncherPreDownloadGamePath.inputs.Path.label": "Game install directory",

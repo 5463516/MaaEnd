@@ -1546,7 +1546,7 @@
     "option.LauncherPreDownloadAutoAction.cases.PreDownload.label": "事前ダウンロードと更新を実行",
     "option.LauncherPreDownloadAutoAction.description": "事前ダウンロードやゲーム更新がある場合に自動で操作するか。MaaEnd を管理者として実行する必要があります：鷹角ランチャーが管理者として動作している場合、非管理者プロセスからはそのウィンドウをクリックできません。ゲーム更新は完了まで待ってからタスクを続行するため、時間がかかることがあります。",
     "option.LauncherPreDownloadAutoAction.label": "事前ダウンロードまたは更新を検出したとき",
-    "option.LauncherPreDownloadEnable.description": "タスク開始前に鷹角のサーバーへ接続し、新しい事前ダウンロードや更新があるか確認します。リクエストに含まれるのは区服とローカルのバージョン番号のみで、UID・アカウント・端末識別子は送信しません。オフにすると通信は行いませんが、ランチャー画面の認識による検出と更新の実行は引き続き行われます。",
+    "option.LauncherPreDownloadEnable.description": "タスク開始前に鷹角のサーバーへ接続し、新しい事前ダウンロードや更新があるか確認します。リクエストに含まれるのはゲーム識別子・チャネルとローカルのバージョン番号のみで、UID・アカウント・端末識別子は送信しません。オフにすると通信は行いませんが、ランチャー画面の認識による事前ダウンロードの実行は引き続き行われます。",
     "option.LauncherPreDownloadEnable.label": "オンラインで更新を確認",
     "option.LauncherPreDownloadGamePath.inputs.Path.description": "ゲーム本体のインストール先（Endfield.exe が入っているフォルダ）を入力してください。例：D:\\Hypergryph\\Arknights Endfield",
     "option.LauncherPreDownloadGamePath.inputs.Path.label": "ゲームのインストール先",

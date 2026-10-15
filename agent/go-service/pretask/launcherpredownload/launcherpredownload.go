@@ -93,8 +93,11 @@ func Run(args []string) bool {
 	opts := parseOptions(args)
 
 	// 联网查询与窗口操作是两件独立的事：关掉联网只是不做接口查询，如果用户选了
-	// 自动操作，仍然会去识别启动器画面并触发更新——只是少了接口这层门禁，
+	// 自动操作，仍然会去识别启动器画面并触发**预下载**——只是少了接口这层门禁，
 	// 改由"认不认得出圆钮"来把关。
+	//
+	// 注意这里**不包含更新**：更新态下那颗圆钮根本不存在，而离线时无法区分主按钮
+	// 是"更新游戏"还是"开始游戏"，盲点会在「开始游戏」状态下把游戏拉起来。
 	var (
 		cfg    *gameConfig
 		latest *latestGame
@@ -383,6 +386,7 @@ func report(cfg *gameConfig, latest *latestGame) {
 
 	default:
 		log.Warn().
+			Str("component", componentName).
 			Int("action", latest.Action).
 			Str("installed_version", cfg.Version).
 			Str("latest_version", latest.Version).
