@@ -7,6 +7,23 @@ import (
 	"testing"
 )
 
+// TestRunExitCode 验证退出码的三态：无事可做返回 true，"真的失败了"返回 false。
+//
+// 只挑**不会触达窗口**的输入——否则测试会把启动器真的拉起来。可用的两类是：
+// 开关关着（不做任何操作），以及未知的动作名（在触达窗口之前就报错）。
+func TestRunExitCode(t *testing.T) {
+	// 无事可做：开关关着，也没有选自动操作。
+	if !Run([]string{`{"LauncherPreDownloadEnable":"No"}`}) {
+		t.Errorf("Run() = false，无事可做时应返回 true")
+	}
+
+	// 真实失败：未知的动作名在触达窗口之前就会返回错误。
+	if Run([]string{`{"LauncherPreDownloadAutoAction":"Nonsense"}`}) {
+		t.Errorf("Run() = true，真实失败应返回 false")
+	}
+}
+
+// TestIsEnabled 验证开关取值的解析（含大小写与空值）。
 func TestIsEnabled(t *testing.T) {
 	tests := []struct {
 		value string
@@ -27,6 +44,7 @@ func TestIsEnabled(t *testing.T) {
 	}
 }
 
+// TestPickAutoAction 验证两条互斥路径的路由：接口说有预下载走圆钮、说需要更新走主按钮，离线只走圆钮。
 func TestPickAutoAction(t *testing.T) {
 	cfg := &gameConfig{Version: "1.5.3"}
 
@@ -106,6 +124,7 @@ func TestPickAutoAction(t *testing.T) {
 	}
 }
 
+// TestUpdateWatcher 验证"连续两次读到目标版本"才判定更新完成，且中途回退要重新累计。
 func TestUpdateWatcher(t *testing.T) {
 	watcher := &updateWatcher{target: "1.6.3"}
 
@@ -140,6 +159,7 @@ func TestUpdateWatcher(t *testing.T) {
 	}
 }
 
+// TestUpdateProgressSample 验证推进判据：暂存区变化算推进，日志级别的少量写入不算。
 func TestUpdateProgressSample(t *testing.T) {
 	base := updateProgressSample{stagingBytes: 1000, writtenBytes: 1000}
 
@@ -190,6 +210,7 @@ func TestUpdateProgressSample(t *testing.T) {
 	}
 }
 
+// TestDecide 验证接口响应折算成四种结论的判定。
 func TestDecide(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -265,6 +286,7 @@ func TestDecide(t *testing.T) {
 	}
 }
 
+// TestParseINI 验证 config.ini 的键值解析。
 func TestParseINI(t *testing.T) {
 	text := "[Game]\r\n" +
 		"version=1.5.3\r\n" +
@@ -306,6 +328,7 @@ func TestParseINI(t *testing.T) {
 	}
 }
 
+// TestParseOptions 验证客户端传来的 option JSON 解析。
 func TestParseOptions(t *testing.T) {
 	payload := `{"LauncherPreDownloadEnable":"Yes",` +
 		`"LauncherPreDownloadGamePath":{"Path":"D:\\Hypergryph\\Arknights Endfield"}}`
@@ -321,6 +344,7 @@ func TestParseOptions(t *testing.T) {
 	}
 }
 
+// TestParseOptionsWithoutPayload 验证没有 payload 时退化为零值而不是报错。
 func TestParseOptionsWithoutPayload(t *testing.T) {
 	for _, args := range [][]string{nil, {}, {"LauncherPreDownload"}, {"--pretask"}} {
 		if opts := parseOptions(args); opts != (optionValue{}) {
@@ -329,6 +353,7 @@ func TestParseOptionsWithoutPayload(t *testing.T) {
 	}
 }
 
+// TestDecryptRoundTrip 验证 AES-256-CBC 解密能还原明文。
 func TestDecryptRoundTrip(t *testing.T) {
 	plain := []byte("[Game]\nversion=1.5.3\nappcode=6LL0KJuqHBVz33WK\n")
 
@@ -347,6 +372,7 @@ func TestDecryptRoundTrip(t *testing.T) {
 	}
 }
 
+// TestDecryptRejectsMisalignedCiphertext 验证密文长度不是块大小整数倍时被拒绝，而不是崩溃。
 func TestDecryptRejectsMisalignedCiphertext(t *testing.T) {
 	if _, err := decrypt([]byte("too short")); err == nil {
 		t.Errorf("decrypt() accepted a ciphertext that is not a multiple of the block size")
@@ -357,6 +383,7 @@ func TestDecryptRejectsMisalignedCiphertext(t *testing.T) {
 	}
 }
 
+// TestHumanGiB 验证字节数格式化成 GiB，以及非法输入返回空串。
 func TestHumanGiB(t *testing.T) {
 	tests := []struct {
 		in   string

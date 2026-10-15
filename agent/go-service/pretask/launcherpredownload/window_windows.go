@@ -468,6 +468,7 @@ func restoreForegroundWindow(handle uintptr) {
 	_, _, _ = procSetForegroundWindow.Call(handle)
 }
 
+// describeWindow 把窗口句柄折算成 launcherWindow：客户区尺寸、左上角屏幕坐标与 DPI 缩放。
 func describeWindow(hwnd uintptr) (*launcherWindow, error) {
 	var rect win32Rect
 	if ok, _, _ := procGetClientRect.Call(hwnd, uintptr(unsafe.Pointer(&rect))); ok == 0 {
@@ -510,6 +511,7 @@ func windowScale(hwnd uintptr) float64 {
 	return 1.0
 }
 
+// windowClass 取窗口类名，用来识别 Qt 窗口。
 func windowClass(hwnd uintptr) string {
 	buffer := make([]uint16, windowClassBuffer)
 
@@ -523,6 +525,7 @@ func windowClass(hwnd uintptr) string {
 	return windows.UTF16ToString(buffer[:length])
 }
 
+// isLauncherProcess 判断窗口是否属于鹰角启动器的进程（Games.exe）。
 func isLauncherProcess(hwnd uintptr) bool {
 	var pid uint32
 

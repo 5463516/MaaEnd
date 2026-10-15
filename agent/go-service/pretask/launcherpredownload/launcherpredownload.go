@@ -87,8 +87,17 @@ func isEnabled(value string) bool {
 
 // Run 是 pretask 入口，签名需匹配 pretask.Handler。
 //
-// 永远返回 true：本功能是锦上添花的前置检查，配置缺失、本地文件读不出、
-// 接口不可达、乃至真的检测到更新，任何一种情况都不该让用户的日常任务跑不成。
+// 返回值分三态，区分"无事可做"与"真的失败了"：
+//
+//   - **无事可做**（开关关着、没填路径、配置读不出、接口不可达、认不出按钮）
+//     返回 true——这些都在预期内，记日志就够了；
+//   - **尝试了自动操作但没成功**（点击失败、确认弹窗没出现、更新等待卡住或超时）
+//     返回 false——这类失败必须让用户看得见，否则他只会以为"预任务完成"、
+//     而实际上该手动点的那一下并没有点。
+//
+// 返回 false **不会**阻断用户的日常任务：客户端拿到非零退出码只在界面上多一条
+// 警告（MXU 的 runPretask 分支只 warn/error 后继续），因此本功能"锦上添花"的
+// 性质不变。
 func Run(args []string) bool {
 	opts := parseOptions(args)
 
@@ -117,6 +126,8 @@ func Run(args []string) bool {
 			Str("component", componentName).
 			Str("auto_action", opts.AutoAction).
 			Msg("automatic launcher action failed, the launcher can still be used manually")
+
+		return false
 	}
 
 	return true

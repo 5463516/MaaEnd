@@ -13,6 +13,7 @@ var (
 	dialogWhite    = color.RGBA{R: 235, G: 235, B: 235, A: 255}
 )
 
+// newFrame 造一张纯黑画布，供合成帧使用。
 func newFrame(width, height int) *image.RGBA {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
@@ -25,6 +26,7 @@ func newFrame(width, height int) *image.RGBA {
 	return img
 }
 
+// paintCircle 在画布上涂一个实心圆。
 func paintCircle(img *image.RGBA, c circle, fill color.RGBA) {
 	for y := int(math.Floor(c.Center.Y - c.Radius)); y <= int(math.Ceil(c.Center.Y+c.Radius)); y++ {
 		for x := int(math.Floor(c.Center.X - c.Radius)); x <= int(math.Ceil(c.Center.X+c.Radius)); x++ {
@@ -37,6 +39,7 @@ func paintCircle(img *image.RGBA, c circle, fill color.RGBA) {
 	}
 }
 
+// paintBox 在画布上涂一个实心矩形。
 func paintBox(img *image.RGBA, b box, fill color.RGBA) {
 	for y := int(b.Min.Y); y < int(b.Max.Y); y++ {
 		for x := int(b.Min.X); x < int(b.Max.X); x++ {
@@ -45,6 +48,7 @@ func paintBox(img *image.RGBA, b box, fill color.RGBA) {
 	}
 }
 
+// TestLayoutConstantsAtBaseSize 校验 1280x720 @100% 下各控件的期望位置与真机标定值一致。
 func TestLayoutConstantsAtBaseSize(t *testing.T) {
 	l := newLayout(1280, 720, 1)
 
@@ -67,6 +71,7 @@ func TestLayoutConstantsAtBaseSize(t *testing.T) {
 	}
 }
 
+// TestLayoutCentresContentInLargerWindow 校验窗口大于内容区时内容区居中，而不是贴左上角。
 func TestLayoutCentresContentInLargerWindow(t *testing.T) {
 	// 实机数据：客户区 1968x1131、DPI 缩放 1.5 → 内容区 1312x754 CSS。
 	// 窗口比内容区大，内容居中，圆心实测 (1442.5, 979.5)、半径 45。
@@ -82,6 +87,7 @@ func TestLayoutCentresContentInLargerWindow(t *testing.T) {
 	}
 }
 
+// TestLayoutScalesWithDpi 校验物理坐标随 DPI 缩放等比放大。
 func TestLayoutScalesWithDpi(t *testing.T) {
 	// 200% 缩放下客户区是 2560x1440，几何应等比放大一倍。
 	l := newLayout(2560, 1440, 2)
@@ -100,6 +106,7 @@ func TestLayoutScalesWithDpi(t *testing.T) {
 	}
 }
 
+// TestFindDiscOnSyntheticFrames 在合成帧上验证圆钮能被正确定位。
 func TestFindDiscOnSyntheticFrames(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -137,6 +144,7 @@ func TestFindDiscOnSyntheticFrames(t *testing.T) {
 	}
 }
 
+// TestFindDiscRejectsNonDiscShapes 验证方块、细长条等非圆形状不会被误认成圆钮。
 func TestFindDiscRejectsNonDiscShapes(t *testing.T) {
 	l := newLayout(1280, 720, 1)
 	want := l.disc()
@@ -197,6 +205,7 @@ func TestFindDiscRejectsNonDiscShapes(t *testing.T) {
 	}
 }
 
+// TestDiscGlyphDetectsMotion 验证图标或背景的变化能被指纹差异捕捉到。
 func TestDiscGlyphDetectsMotion(t *testing.T) {
 	// 下载中的圆钮会给箭头挂循环动画，"可点击开始/继续"是静止的。
 	// 用两次抓帧的指纹差异来区分这两者，这里钉住这个判据的基本行为。
@@ -226,6 +235,7 @@ func TestDiscGlyphDetectsMotion(t *testing.T) {
 	}
 }
 
+// TestDiscGlyphIgnoresBackgroundOutsideTheDisc 验证圆形掩码把圆外背景排除在外（踩过的坑：方形采样区的四角落在圆外，底图一变就凭空造出差异）。
 func TestDiscGlyphIgnoresBackgroundOutsideTheDisc(t *testing.T) {
 	// 采样方格的四个角会伸到圆钮之外（半边长 r*0.8，对角长 r*1.13）。若把背景
 	// 算进指纹，启动器底图的任何变化都会被误判成"图标在动"——实机踩过：底图
@@ -252,6 +262,7 @@ func TestDiscGlyphIgnoresBackgroundOutsideTheDisc(t *testing.T) {
 	}
 }
 
+// TestGlyphSequenceAnimating 验证连续多帧的指纹序列能判定动画，且不会因为某几帧恰好全透明而误判成静止。
 func TestGlyphSequenceAnimating(t *testing.T) {
 	// arrowLoopAnimating 的周期是 2 秒，其中约 40% 的时间箭头**完全透明**，
 	// 另有 10% 静止。这里用"静止帧"代表那些看起来没变化的相位。
@@ -312,6 +323,7 @@ func TestGlyphSequenceAnimating(t *testing.T) {
 	}
 }
 
+// TestGlyphMatchesDownloadButton 验证基准指纹只认"可点击预下载"，"已完成"状态的云朵加叉会被拒绝。
 func TestGlyphMatchesDownloadButton(t *testing.T) {
 	if len(downloadGlyph) != glyphGridSize*glyphGridSize {
 		t.Fatalf("基准指纹长度 = %d，应为 %d", len(downloadGlyph), glyphGridSize*glyphGridSize)
@@ -355,6 +367,7 @@ func TestGlyphMatchesDownloadButton(t *testing.T) {
 	}
 }
 
+// TestFindConfirmButton 验证弹窗里的白色药丸按钮能被正确定位。
 func TestFindConfirmButton(t *testing.T) {
 	l := newLayout(1280, 720, 1)
 	want := l.confirmButton()
@@ -372,6 +385,7 @@ func TestFindConfirmButton(t *testing.T) {
 	}
 }
 
+// TestFindConfirmButtonRejectsWrongShapes 验证方块、细条等形状不会被误认成确认按钮。
 func TestFindConfirmButtonRejectsWrongShapes(t *testing.T) {
 	l := newLayout(1280, 720, 1)
 	want := l.confirmButton()
@@ -413,6 +427,7 @@ func TestFindConfirmButtonRejectsWrongShapes(t *testing.T) {
 	}
 }
 
+// TestFindDiscIgnoresTheNeighbouringPill 验证搜索域外扩后不会把旁边的主按钮当成圆钮。
 func TestFindDiscIgnoresTheNeighbouringPill(t *testing.T) {
 	// 圆钮右手边约 12 CSS px 就是主按钮。搜索域一旦够到它，两者会被算成一团，
 	// 圆心右偏、半径虚大——实机两帧都复现过，所以这里钉一条回归。
@@ -444,6 +459,7 @@ func TestFindDiscIgnoresTheNeighbouringPill(t *testing.T) {
 	}
 }
 
+// TestHasDialogBackdrop 验证"卡片顶部一片均匀暗色"能把弹窗与亮色立绘背景区分开。
 func TestHasDialogBackdrop(t *testing.T) {
 	l := newLayout(1280, 720, 1)
 	card := l.dialogCard()
@@ -500,6 +516,7 @@ func TestHasDialogBackdrop(t *testing.T) {
 	}
 }
 
+// TestIsButtonYellowTolerance 验证颜色判据对实测色偏与 HDR 偏移留了足够容差。
 func TestIsButtonYellowTolerance(t *testing.T) {
 	tests := []struct {
 		name    string

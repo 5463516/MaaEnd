@@ -342,14 +342,17 @@ func clickUpdateButton(cfg *gameConfig, targetVersion string) error {
 		Str("target_version", targetVersion).
 		Msg("game update has been started, waiting for it to finish")
 
-	if !awaitUpdateComplete(win, cfg, targetVersion) {
+	if err := awaitUpdateComplete(win, cfg, targetVersion); err != nil {
 		// 没等到结束就别动启动器——更新很可能还在下载或安装，杀掉它等于打断
 		// 用户的更新。留在原地，让它在后台继续跑完。
+		//
+		// 同时把错误往上传：这属于"真的试了但没成功"，用户有权知道更新没跑完。
 		log.Warn().
+			Err(err).
 			Str("component", componentName).
 			Msg("leaving the launcher running because the update has not finished")
 
-		return nil
+		return err
 	}
 
 	// 更新完成后主按钮会变回「开始游戏」，启动器窗口已经没用了；留着它只会挡在
@@ -368,7 +371,10 @@ func clickUpdateButton(cfg *gameConfig, targetVersion string) error {
 	return nil
 }
 
-// awaitUpdateComplete 等到更新真正结束，返回是否等到。
+// awaitUpdateComplete 等到更新真正结束。等到返回 nil，没等到返回带原因的错误。
+//
+// 返回错误而不是 bool，是为了让"无事可做"和"真的失败"在调用链上可区分：
+// 调用方要把失败一路传到 pretask 的退出码，用户才能在客户端看到那条警告。
 //
 // 完成判据用**本地版本号**而不是按钮上的文字：更新过程中主按钮会依次显示
 // 下载中 / 校验中 / 解压中 / 安装中，那是文案，既依赖语言又得上 OCR；而
@@ -379,7 +385,7 @@ func clickUpdateButton(cfg *gameConfig, targetVersion string) error {
 // 启动器进程的写入量还在变，就认为更新仍在推进、继续等下去；连续
 // updateStallTimeout 没有任何推进才判定卡住。这样百兆宽带和十几兆宽带都能
 // 等到真正结束，而真正卡死（例如网络断了）时又不会永远挂着。
-func awaitUpdateComplete(win *launcherWindow, cfg *gameConfig, targetVersion string) bool {
+func awaitUpdateComplete(win *launcherWindow, cfg *gameConfig, targetVersion string) error {
 	targetVersion = strings.TrimSpace(targetVersion)
 
 	if cfg == nil || cfg.Dir == "" || targetVersion == "" {
@@ -387,7 +393,7 @@ func awaitUpdateComplete(win *launcherWindow, cfg *gameConfig, targetVersion str
 			Str("component", componentName).
 			Msg("no local game directory or target version, cannot wait for the update")
 
-		return false
+		return errors.New("launcherpredownload: no local game directory or target version to wait for")
 	}
 
 	watcher := &updateWatcher{target: targetVersion}
@@ -411,7 +417,7 @@ func awaitUpdateComplete(win *launcherWindow, cfg *gameConfig, targetVersion str
 				Str("installed_version", targetVersion).
 				Msg("game update finished")
 
-			return true
+			return nil
 		}
 
 		sample := probeUpdateProgress(win, cfg.Dir)
@@ -424,7 +430,10 @@ func awaitUpdateComplete(win *launcherWindow, cfg *gameConfig, targetVersion str
 				Dur("stalled_for", updateStallTimeout).
 				Msg("the update made no progress for a while, giving up")
 
-			return false
+			return fmt.Errorf(
+				"launcherpredownload: the update made no progress for %s, giving up",
+				updateStallTimeout,
+			)
 		}
 
 		if time.Since(deadline) > 0 {
@@ -433,7 +442,10 @@ func awaitUpdateComplete(win *launcherWindow, cfg *gameConfig, targetVersion str
 				Dur("waited", updateHardTimeout).
 				Msg("gave up waiting for the update after the hard timeout")
 
-			return false
+			return fmt.Errorf(
+				"launcherpredownload: gave up waiting for the update after %s",
+				updateHardTimeout,
+			)
 		}
 
 		if time.Since(announced) >= updateProgressInterval {
@@ -466,6 +478,10 @@ func probeUpdateProgress(win *launcherWindow, gameDir string) updateProgressSamp
 }
 
 // stagingBytes 返回游戏目录下启动器暂存区的总字节数。
+//
+// 遍历失败**刻意不返回错误**：暂存区在下载开始前与更新完成后本来就不存在，
+// 把它当成错误会让正常的更新流程被判失败。读不到时返回 0 只是"这一个信号
+// 没得用"，推进判定还有启动器进程写入量那一路兜底（见 updateProgressSample）。
 func stagingBytes(gameDir string) uint64 {
 	var total uint64
 

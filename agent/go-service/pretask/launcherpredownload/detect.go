@@ -246,6 +246,7 @@ func hasDialogBackdrop(img image.Image, card box) bool {
 	return highest-lowest <= cardSampleTolerance
 }
 
+// brightestChannel 返回三个通道里最大的那个，用来衡量一个像素有多亮。
 func brightestChannel(r, g, b uint8) int {
 	value := int(r)
 	if int(g) > value {
@@ -563,6 +564,7 @@ func isWhiteButton(r, g, b uint8) bool {
 	return r >= whiteMinChannel && g >= whiteMinChannel && b >= whiteMinChannel
 }
 
+// boundsOf 把图像的包围盒归一到 (0,0) 起点，方便按客户区坐标遍历。
 func boundsOf(img image.Image) image.Rectangle {
 	bounds := img.Bounds()
 
@@ -590,6 +592,7 @@ func forEachPixel(
 	}
 }
 
+// clampInt 把 value 夹到 [low, high] 区间内。
 func clampInt(value, low, high int) int {
 	if value < low {
 		return low
