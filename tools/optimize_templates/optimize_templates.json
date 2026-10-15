@@ -2504,5 +2504,7 @@
     "resource/image/MapLocator/Wuling/Lv010Tier457": "5618c064f15bc120012a0bc480c59613402b4de77d55e5f471b4070367bbb956",
     "resource/image/MapLocator/Wuling/Lv010Tier455": "32c78c415638bd709f119b2d4d119afd97ba398f49ad5b9e49f86ea97ac51e42",
     "resource/image/MapLocator/Wuling/Lv010Tier468": "206af2530411863784b74c4dfc0272d9cb6692a9f32945ef48cb6514c2b1d195",
-    "resource/image/MapLocator/Wuling/Lv010Tier467": "66768c29c0242ff9c8b18c83ed8f27506e3d1f43fe4461505e19621175d2416e"
+    "resource/image/MapLocator/Wuling/Lv010Tier467": "66768c29c0242ff9c8b18c83ed8f27506e3d1f43fe4461505e19621175d2416e",
+    "resource/image/SceneManager/NewTipsNext": "a88a6ec1744454537515b060531e95bacbafdc5545a9213a9f4e0a566d0a4e01",
+    "resource/image/GameLauncher/EndfieldIcon": "ce62dec911997c0b983e33111511061e4df14972c890a15bfe0b7dc2b22f5b7f"
 }
