@@ -1,22 +1,17 @@
 {
     // 鹰角启动器状态检测：在 GameLauncherSelectEndfield 之后、GameLauncherClickStartGame 之前分流。
-    // 仅使用本地截图 + 识别 + 点击；不请求启动器接口、不读写启动器配置、不修改游戏本体。
-    // 界面链条：GameLauncherSelectEndfield（左栏点终末地）→ 本文件分流 → GameLauncherClickStartGame
-    //           （右下点开始游戏）→ GameLauncherInGame（OCR「游戏中」确认启动成功）。
-    // 分流依据（均取自启动器窗口右下角）：
-    //   「更新游戏」→ 点击 → 「系统提示」弹窗「确认」→ 等按钮变回「开始游戏」→ 交回官方节点；
-    //   黄色圆钮 + 「云+下箭头」图标 → 点击预下载（下载期间仍可正常游戏）→ 同上回官方节点；
-    //   其余情况（含已暂停/已完成/出错图标）不动作，直接交回官方节点。
     "GameLauncherStateCheck": {
         "desc": "已选中终末地：先判断是否需要更新、是否存在预下载，再走官方启动流程",
         "next": [
             "GameLauncherUpdateGame",
+            "GameLauncherUpdating",
             "GameLauncherPreDownloadIdle",
             "GameLauncherClickStartGame"
         ]
     },
     "GameLauncherUpdateGame": {
-        "desc": "右下角按钮显示「更新游戏」，点击开始更新",
+        "desc": "右下角按钮为可点击态「更新游戏 / 继续更新 / 继续下载」→ 点击开始或继续更新",
+        // 点击前提：只有这三个状态才点击；下载中/更新中/校验中/解压中/安装中一律不点
         "recognition": "OCR",
         "roi": [
             -320,
@@ -27,11 +22,36 @@
         // 启动器界面文案由启动器自身下发，不进入游戏 i18n 表，与官方 GameLauncherStartGameText 同样跳过
         "expected": [
             // @i18n-skip
-            "更新游戏"
+            "更新游戏",
+            "继续更新",
+            "继续下载"
         ],
         "action": "Click",
         "next": [
             "GameLauncherConfirmDialog",
+            "GameLauncherWaitStartGame"
+        ]
+    },
+    "GameLauncherUpdating": {
+        "desc": "更新进行中（下载中/更新中/校验中/解压中/安装中）：本帧不点击，直接回到等待节点继续观察",
+        // 命中即说明「状态已知」。回到 GameLauncherWaitStartGame 会让等待窗口重新计时，
+        // 因此正常更新可以一直等下去，不受任何硬上限约束。
+        "recognition": "OCR",
+        "roi": [
+            -320,
+            -140,
+            320,
+            140
+        ],
+        "expected": [
+            // @i18n-skip
+            "下载中",
+            "更新中",
+            "校验中",
+            "解压中",
+            "安装中"
+        ],
+        "next": [
             "GameLauncherWaitStartGame"
         ]
     },
@@ -79,12 +99,19 @@
         ]
     },
     "GameLauncherWaitStartGame": {
-        "desc": "等待更新完成：每帧重新识别右下角按钮，直到显示「开始游戏」（轮询依赖全局 rate_limit，无固定延迟）",
-        // 本文件唯一的 timeout：-1 表示不设上限。等待完全由「识别 → 未命中 → 下一帧」驱动，
-        // 不用固定延迟；若沿用默认 20s，更新中途就会误判失败。
-        "timeout": -1,
+        "desc": "等待更新结束：每帧重新识别右下角按钮；识别出已知状态就继续等，只有连续识别不出已知状态才失败",
+        // 本文件唯一的 timeout：12 秒 ≈ 连续 5 帧（1s 轮询 + 每帧若干次 OCR，其中约 2s/帧）。
+        // 命中任一已知状态都会重新进入本节点，等待窗口随之重置，所以正常更新没有硬上限；
+        // 连续 5 帧识别不出任何已知状态（更新卡死、界面异常等）等价于「重试识别五次仍失败」，
+        // 此时让 next 列表超时失败，pretask 随之返回失败并记日志
+        //（客户端对预任务失败只提示警告，不会中止用户任务）。
+        "timeout": 12000,
+        // 每帧一次识别的节奏（毫秒）
+        "rate_limit": 1000,
         "next": [
             "GameLauncherConfirmDialog",
+            "GameLauncherUpdateGame",
+            "GameLauncherUpdating",
             "GameLauncherClickStartGame"
         ]
     },
