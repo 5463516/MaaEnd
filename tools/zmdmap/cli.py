@@ -11,10 +11,8 @@
 ``data/`` 与 ``data/raw/`` 都是 zmdmap 自己的数据树（``tools/zmdmap/data/``）：``raw/`` 放原样
 产物（不入库），``data/`` 放可以直接用的、入库的数据。
 
-``generate`` 按固定顺序跑同一批 ``build_*``
-（delivery_jobs -> environment_monitoring -> sell_product -> delivery_destinations ->
-teleport_anchors -> collect_points -> essence_points -> weapons -> items），产物只带游戏世界坐标；
-底图像素由 ``project`` 按 BaseNav 的 zone 表补上。
+``generate`` 按固定顺序跑 ``datasets/`` 里的全部 ``Dataset`` 子类（需要投影的在前），产物只带游戏世界
+坐标；底图像素由 ``project`` 按 BaseNav 的 zone 表补上。
 
 输入默认取与 MaaEnd 平级的兄弟仓库（由 ``--workspace`` 定位），三档优先级为
 「命令行 > 环境变量 > 默认」：
@@ -34,7 +32,8 @@ teleport_anchors -> collect_points -> essence_points -> weapons -> items），�
     uv run zmdmap generate --only collect_points       # 只生成一份（可重复给）
     uv run zmdmap generate --sync                     # 先同步兄弟仓库，再生成
     uv run zmdmap fetch                               # 下载已发布数据并入库
-    uv run zmdmap fetch --cache-bust                  # 强制重新下载（CI 上默认开启）
+    uv run zmdmap fetch --force                       # 重新下载（带时间戳，不走远端缓存）
+    uv run zmdmap fetch --only collect_points          # 只下载/入库这一份（各任务生成器都这么用）
     uv run zmdmap fetch --no-download --only collect_points  # 不下载，只用 data/raw/ 重新入库
 """
 
@@ -48,11 +47,10 @@ from typing import Any, TypeVar
 
 import click
 
+from .constants import MANIFEST_FILE
 from .datasets import (
-    COPY,
     DATASETS,
     DATASET_NAMES,
-    PROJECT,
     Dataset,
     files_of,
     select_datasets,
@@ -68,8 +66,16 @@ from .paths import (
     json_data_dir_in,
     table_cfg_dir_in,
 )
-from .project import copy_files, project_data
-from .sync import SYNC_MARK_UNKNOWN, SYNC_MARKS, changed_data_files, preflight, sync_workspace
+from .project import copy_files, project_data, read_version, with_metadata, write_manifest
+from .sync import (
+    SYNC_MARK_UNKNOWN,
+    SYNC_MARKS,
+    changed_data_files,
+    data_version,
+    preflight,
+    repo_data_version,
+    sync_workspace,
+)
 
 #: click 选项装饰器的返回类型。
 F = TypeVar("F", bound=Callable[..., Any])
@@ -118,14 +124,20 @@ def check_input_dir(label: str, path: Path, option: str, env_name: str) -> None:
 
 
 def generate_datasets(
-    datasets: Sequence[Dataset],
+    datasets: Sequence[type[Dataset]],
     table_cfg_dir: Path,
     json_data_dir: Path,
     out_dir: Path,
+    data_dir: Path,
     *,
+    version: str | None,
     force: bool,
 ) -> int:
-    """跑 ``build_*`` 并把原始形态落到 ``out_dir``；返回成功生成的份数。"""
+    """跑 ``build`` 并把原始形态落到 ``out_dir``；返回成功生成的份数。
+
+    每份数据都在最前面写上元数据：版本取 ``--version`` / 从兄弟仓库读到的版本，都读不到就沿用已有文件里的
+    版本（本地重算不会凭空改掉版本号）；``sha256`` 是数据本体的内容指纹，按这次生成的本体重算。
+    """
     written = 0
     for dataset in datasets:
         output_path = out_dir / dataset.file_name
@@ -133,6 +145,8 @@ def generate_datasets(
             data = dataset.build(table_cfg_dir, json_data_dir)
         except (OSError, ValueError) as error:
             raise click.ClickException(f"[{dataset.name}] {error}") from error
+        stamp = version or read_version(output_path) or read_version(data_dir / dataset.file_name)
+        data = with_metadata(data, stamp)
         if should_skip(output_path, data, force):
             click.echo(f"[{dataset.name}] 生成结果未变化，跳过写入：{output_path}")
             continue
@@ -186,13 +200,13 @@ def report_data_changes(data_dir: Path, file_names: Sequence[str]) -> None:
         click.echo("data/*.json：没有改动")
 
 
-def only_option(names: Sequence[str] = DATASET_NAMES) -> Decorator:
+def only_option(names: Sequence[str] = DATASET_NAMES, verb: str = "处理") -> Decorator:
     return click.option(
         "--only",
         "only",
         type=click.Choice(names),
         multiple=True,
-        help="只处理列出的数据集（可重复给；缺省全部）",
+        help=f"只{verb}列出的数据集（可重复给；缺省全部）",
     )
 
 
@@ -256,6 +270,12 @@ def main() -> None:
 @only_option()
 @click.option("--sync/--no-sync", default=False, help="生成前先同步兄弟仓库（只做快进合并）")
 @click.option(
+    "--version",
+    "data_version_option",
+    default=None,
+    help="写进每份数据的版本（默认从兄弟仓库读；都读不到就沿用原有的）",
+)
+@click.option(
     "--raw-only",
     is_flag=True,
     help="只出原始形态（只写 --out-dir），不做入库",
@@ -274,6 +294,7 @@ def generate_command(
     data_dir: Path,
     only: tuple[str, ...],
     sync: bool,
+    data_version_option: str | None,
     raw_only: bool,
     nav: str | None,
     dry_run: bool,
@@ -283,7 +304,7 @@ def generate_command(
     """从本地 TableCfg / JsonData 生成精简数据（带坐标的投影，其余原样复制）。"""
     if list_datasets:
         for dataset in DATASETS:
-            how = "投影" if dataset.materialize == PROJECT else "复制"
+            how = "投影" if dataset.needs_projection else "复制"
             click.echo(f"{dataset.name}\t{dataset.file_name}\t{how}")
         return
 
@@ -294,13 +315,23 @@ def generate_command(
     out_dir = out_dir.expanduser().resolve()
     data_dir = data_dir.expanduser().resolve()
     datasets = select_datasets(only)
-    pipeline_files = files_of(datasets, materialize=PROJECT)
-    plain_files = files_of(datasets, materialize=COPY)
+    pipeline_files = files_of(datasets, projected=True)
+    plain_files = files_of(datasets, projected=False)
 
     click.echo(f"[zmdmap] 工作区（兄弟仓库）：{workspace}（{parameter_source(ctx, 'workspace')}）")
     click.echo(f"[zmdmap] TableCfg：{table_cfg_dir}（{parameter_source(ctx, 'table_cfg_dir')}）")
     click.echo(f"[zmdmap] JsonData：{json_data_dir}（{parameter_source(ctx, 'json_data_dir')}）")
     click.echo(f"[zmdmap] 数据集：{len(datasets)} 个（{'、'.join(d.name for d in datasets)}）")
+
+    # 版本优先命令行；否则从兄弟仓库读 —— 工作区里没有兄弟仓库时（发布 CI 可能只给目录），
+    # 退回 TableCfg 所在的那个仓库，它通常就是 BeyondTableCfg。
+    detected = data_version(workspace) or repo_data_version(table_cfg_dir.parent)
+    version = data_version_option or detected
+    if version:
+        origin = "命令行" if data_version_option else "兄弟仓库"
+        click.echo(f"[zmdmap] 数据版本：{version}（{origin}）")
+    else:
+        click.echo("[zmdmap] 数据版本：读不到，沿用各份数据原有的版本")
 
     sync_failed = False
     if sync:
@@ -338,10 +369,26 @@ def generate_command(
     started = time.monotonic()
     generated_ok = True
     try:
-        generate_datasets(datasets, table_cfg_dir, json_data_dir, out_dir, force=force)
+        generate_datasets(
+            datasets,
+            table_cfg_dir,
+            json_data_dir,
+            out_dir,
+            data_dir,
+            version=version,
+            force=force,
+        )
+        manifest_path = write_manifest(
+            out_dir, [dataset.file_name for dataset in DATASETS], version
+        )
+        if manifest_path is not None:
+            click.echo(f"  {MANIFEST_FILE} -> {manifest_path}")
     except click.ClickException as error:
         generated_ok = False
         click.echo(f"  x {error.message}")
+    except OSError as error:
+        generated_ok = False
+        click.echo(f"  x 写 {MANIFEST_FILE} 失败：{error}")
     generate_seconds = time.monotonic() - started
 
     materialized_ok: bool | None = None
@@ -373,7 +420,7 @@ def generate_command(
         click.echo(f"入库：{'正常' if materialized_ok else '失败'}（{data_dir}）")
     report_data_changes(data_dir, [dataset.file_name for dataset in datasets])
     if data_dir == ZMDMAP_DATA_DIR:
-        click.echo("提示：data/version.txt 是「已发布数据版本」，本地重算不会改它。")
+        click.echo("提示：每份数据最前面写着 version（版本）与 sha256（内容指纹）；读不到兄弟仓库的版本时沿用原有的。")
 
     if sync_failed or not generated_ok or materialized_ok is False:
         ctx.exit(1)
@@ -382,13 +429,12 @@ def generate_command(
 @main.command(name="fetch")
 @raw_dir_option()
 @data_dir_option()
-@only_option()
+@only_option(verb="下载并入库")
 @nav_option()
-@click.option("--force", is_flag=True, help="重新下载，并重写未变化的输出文件")
 @click.option(
-    "--cache-bust",
+    "--force",
     is_flag=True,
-    help="请求带时间戳绕开远端缓存（CI 上自动开启，同时意味着强制下载；同一次运行只下载一次）",
+    help="重新下载（请求带时间戳，不走远端缓存），并重写未变化的输出文件",
 )
 @click.option(
     "--download/--no-download",
@@ -402,7 +448,6 @@ def fetch_command(
     only: tuple[str, ...],
     nav: str | None,
     force: bool,
-    cache_bust: bool,
     download: bool,
     raw_only: bool,
 ) -> None:
@@ -410,13 +455,14 @@ def fetch_command(
     raw_dir = out_dir.expanduser().resolve()
     data_dir = data_dir.expanduser().resolve()
     datasets = select_datasets(only)
-    pipeline_files = files_of(datasets, materialize=PROJECT)
-    plain_files = files_of(datasets, materialize=COPY)
+    pipeline_files = files_of(datasets, projected=True)
+    plain_files = files_of(datasets, projected=False)
 
     if download:
         click.echo("── 下载 ──────────────────────────────────────────")
+        click.echo(f"   {len(pipeline_files) + len(plain_files)} 份：{'、'.join((*pipeline_files, *plain_files))}")
         try:
-            download_published(raw_dir, force=force, cache_bust=cache_bust)
+            download_published(raw_dir, pipeline_files, plain_files, force=force)
         except (OSError, ValueError) as error:
             raise click.ClickException(str(error)) from error
     else:
