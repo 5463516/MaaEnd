@@ -10,7 +10,9 @@
         ]
     },
     "GameLauncherUpdateGame": {
-        "desc": "右下角按钮为可点击态「更新游戏 / 继续更新 / 继续下载」→ 点击开始或继续更新",
+        "desc": "右下角按钮为可点击态「更新游戏 / 继续更新 / 继续下载」→ 点击；点完没反应则隔一帧重试，最多 5 次",
+        // 整个任务内最多命中 5 次（即最多点击 5 次）；用尽后本节点不再参与识别，任务随之失败退出。
+        "max_hit": 5,
         // 点击前提：只有这三个状态才点击；下载中/更新中/校验中/解压中/安装中一律不点
         "recognition": "OCR",
         "roi": [
@@ -27,9 +29,16 @@
             "继续下载"
         ],
         "action": "Click",
+        // 点击后必须看到状态改变：弹出「系统提示」弹窗，或按钮进入进行中态。
+        // 约 2 秒（1 帧验证 + 弹窗动画余量）内都没变，说明这一下没生效 → 经 on_error 回到本节点再点一次；
+        // 受上面 max_hit: 5 限制，最多重试到第 5 次，仍无变化就失败退出。
+        "timeout": 1500,
         "next": [
             "GameLauncherConfirmDialog",
-            "GameLauncherWaitStartGame"
+            "GameLauncherUpdating"
+        ],
+        "on_error": [
+            "GameLauncherUpdateGame"
         ]
     },
     "GameLauncherUpdating": {
@@ -65,7 +74,7 @@
         "box_index": 1,
         "action": "Click",
         "next": [
-            "GameLauncherWaitStartGame"
+            "GameLauncherConfirmDialogClosed"
         ]
     },
     "GameLauncherConfirmDialogTitle": {
@@ -98,9 +107,23 @@
             "确认"
         ]
     },
+    "GameLauncherConfirmDialogClosed": {
+        "desc": "确认弹窗已关闭（标题与「确认」都不再出现）→ 才进入等待「开始游戏」",
+        // 识别 → 点击 → 再识别：点完「确认」先确认弹窗真的关了，
+        // 这样等待节点就不需要再挂「确认」节点，也就不会出现「点不动就反复点」的重复点击。
+        "recognition": "And",
+        "all_of": [
+            "GameLauncherConfirmDialogTitle",
+            "GameLauncherConfirmDialogConfirm"
+        ],
+        "inverse": true,
+        "next": [
+            "GameLauncherWaitStartGame"
+        ]
+    },
     "GameLauncherWaitStartGame": {
         "desc": "等待更新结束：每帧重新识别右下角按钮；识别出已知状态就继续等，只有连续识别不出已知状态才失败",
-        // 本文件唯一的 timeout：12 秒 ≈ 连续 5 帧（1s 轮询 + 每帧若干次 OCR，其中约 2s/帧）。
+        // 本文件 timeout 之一：12 秒 ≈ 连续 5 帧（1s 轮询 + 每帧若干次 OCR，其中约 2s/帧）。
         // 命中任一已知状态都会重新进入本节点，等待窗口随之重置，所以正常更新没有硬上限；
         // 连续 5 帧识别不出任何已知状态（更新卡死、界面异常等）等价于「重试识别五次仍失败」，
         // 此时让 next 列表超时失败，pretask 随之返回失败并记日志
@@ -108,8 +131,10 @@
         "timeout": 12000,
         // 每帧一次识别的节奏（毫秒）
         "rate_limit": 1000,
+        // 这里只挂「已知状态 → 继续观察」与「开始游戏 → 收尾」两类。
+        // 「确认」弹窗由 GameLauncherConfirmDialogClosed 确认关闭后才进来，本节点不再回头点它，
+        // 避免点不动时对同一按钮反复点击。
         "next": [
-            "GameLauncherConfirmDialog",
             "GameLauncherUpdateGame",
             "GameLauncherUpdating",
             "GameLauncherClickStartGame"
