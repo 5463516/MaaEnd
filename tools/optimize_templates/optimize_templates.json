@@ -2491,5 +2491,11 @@
     "resource/image/AutoStockpile/Goods/Wuling/ChubbyLungBlimp.Tier2": "b3df732596bb1835f4d6a728d3e48089e3f3d9c6c426186c28402a77f4f61b07",
     "resource/image/ProtocolSpace/AdvancedProgression6": "71eba8842a0abe1601fb5d19ff46603c675d0e3212edfd5f3bac95541ce887d8",
     "resource/image/ProtocolSpace/AdvancedProgression6Low": "998eff6973a89e85d8e5c81225ae06f027750ea4f2bed2515a02286f8ddbd551",
-    "resource/image/GiftOperator/Operators/Si": "b5af798470265fe5c6aa486adaff19dfbc3bb6321d22c8c3cb5f4fc40e447a5a"
+    "resource/image/GiftOperator/Operators/Si": "b5af798470265fe5c6aa486adaff19dfbc3bb6321d22c8c3cb5f4fc40e447a5a",
+    "resource/image/AutoEcoFarm/RanchPanel": "36648c0cf5f73cb50bd5a642819f59608159bf625d5c8aa250a00416e81ae838",
+    "resource/image/AutoEcoFarm/FarmTerminal": "949325f28680a92c40e46a16b62d38550fe4b51db38e3a7647553b252f6293c8",
+    "resource/image/AutoEcoFarm/FarmTerminalPanel": "adebdb4f5479bee45f1db0412d463c9ccd127e558a2468538fee323d80eae57b",
+    "resource/image/AutoEcoFarm/Ranch": "7f4d8e9cebe9f2bdde02c3db3f0af04044d1162219db691f45938c9e0563e9db",
+    "resource/image/AutoEcoFarm/FarmingFilterSelected": "1f4d442376432888f5ea057776dee144c00a7a19b377599a6ee515467f352fd9",
+    "resource/image/AutoEcoFarm/FarmingFilter": "f037558dfb315cf8a12ae4f07594c1560d8af0c1a66705cdc6cbce5548a0a65e"
 }
