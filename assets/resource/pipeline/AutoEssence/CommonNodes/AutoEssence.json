@@ -562,11 +562,6 @@
         },
         "pre_delay": 0,
         "action": "DoNothing",
-        "post_delay": 0,
-        "rate_limit": 0,
-        "next": [
-            "AutoEssenceFindAttributeSelection"
-        ],
         "post_wait_freezes": {
             "time": 500,
             "target": [
@@ -576,6 +571,11 @@
                 93
             ]
         },
+        "post_delay": 0,
+        "rate_limit": 0,
+        "next": [
+            "AutoEssenceFindAttributeSelection"
+        ],
         "focus": {
             "Node.Action.Starting": "⚙️正在调整预刻写条件"
         }
