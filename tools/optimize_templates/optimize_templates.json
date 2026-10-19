@@ -2497,5 +2497,6 @@
     "resource/image/AutoEcoFarm/FarmTerminalPanel": "adebdb4f5479bee45f1db0412d463c9ccd127e558a2468538fee323d80eae57b",
     "resource/image/AutoEcoFarm/Ranch": "7f4d8e9cebe9f2bdde02c3db3f0af04044d1162219db691f45938c9e0563e9db",
     "resource/image/AutoEcoFarm/FarmingFilterSelected": "1f4d442376432888f5ea057776dee144c00a7a19b377599a6ee515467f352fd9",
-    "resource/image/AutoEcoFarm/FarmingFilter": "f037558dfb315cf8a12ae4f07594c1560d8af0c1a66705cdc6cbce5548a0a65e"
+    "resource/image/AutoEcoFarm/FarmingFilter": "f037558dfb315cf8a12ae4f07594c1560d8af0c1a66705cdc6cbce5548a0a65e",
+    "resource/image/DeliveryJobs/RewardHeader": "79054b8f7bf0f2251a1635d7d833017655316ef2091d7b17cce9d2436720f35c"
 }
